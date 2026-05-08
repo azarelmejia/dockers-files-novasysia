@@ -1,0 +1,59 @@
+version: "3.9"
+
+services:
+  moodle:
+    image: bitnami/moodle:latest
+    container_name: moodle
+    restart: unless-stopped
+    env_file:
+      - /opt/stack/.env
+    environment:
+      MOODLE_DATABASE_TYPE: "pgsql"
+      MOODLE_DATABASE_HOST: "db_postgres"
+      MOODLE_DATABASE_PORT_NUMBER: "5432"
+      MOODLE_DATABASE_NAME: "moodle_db"
+      MOODLE_DATABASE_USER: "${USUARIO_POSTGRES}"
+      MOODLE_DATABASE_PASSWORD: "${PASSWD_POSTGRES}"
+      MOODLE_HOST: "lean.novasysia.com"       # lean.novasysia.com (viene de tu .env)
+      MOODLE_REVERSEPROXY: "true"
+      MOODLE_SSLPROXY: "true"
+      BITNAMI_DEBUG: "true"
+    volumes:
+      - moodle_moodle_app:/bitnami/moodle
+      - moodle_moodle_data:/bitnami/moodledata
+    networks:
+      - web
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=web
+      # Router HTTPS
+      - traefik.http.routers.lean.rule=Host(`lean.novasysia.com`)
+      - traefik.http.routers.lean.entrypoints=websecure
+      - traefik.http.routers.lean.tls=true
+      - traefik.http.routers.lean.tls.certresolver=le
+      # Servicio  puerto interno del contenedor (Bitnami usa 8080)
+      - traefik.http.routers.lean.service=lean-svc
+      - traefik.http.services.lean-svc.loadbalancer.server.port=8080
+      # Router HTTP  redirige a HTTPS
+      - traefik.http.routers.lean-http.rule=Host(`lean.novasysia.com`)
+      - traefik.http.routers.lean-http.entrypoints=web
+      - traefik.http.routers.lean-http.middlewares=lean-redirect
+      - traefik.http.middlewares.lean-redirect.redirectscheme.scheme=https
+      # (Opcional) Encabezados X-Forwarded-* explcitos
+      - traefik.http.routers.lean.middlewares=lean-addxfwd
+      - traefik.http.middlewares.lean-addxfwd.headers.customrequestheaders.X-Forwarded-Proto=https
+      - traefik.http.middlewares.lean-addxfwd.headers.customrequestheaders.X-Forwarded-Port=443
+      - traefik.http.middlewares.lean-addxfwd.headers.customrequestheaders.X-Forwarded-Host=lean.novasysia.com
+
+volumes:
+  moodle_moodle_app:
+    name: moodle_moodle_app
+  moodle_moodle_data:
+    name: moodle_moodle_data
+
+networks:
+  web:
+    external: true
+  moodle_net:
+    driver: bridge
+

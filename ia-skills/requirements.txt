@@ -1,0 +1,19 @@
+fastapi
+uvicorn
+python-dotenv
+pydantic-settings
+langchain
+langchain-community
+llama-cpp-python
+langgraph
+pymupdf          # Para leer PDFs y extraer imágenes
+opencv-python    # Para procesamiento de visión (rostros)
+pillow           # Manipulación de imágenes para el recorte de foto
+httpx            # Para enviar el webhook de vuelta a Laravel
+matplotlib       # Para visualizar los resultados (opcional, útil para pruebas)
+langchain-google-genai
+psycopg2
+langchain-openrouter
+certifi
+chromadb
+langchain-chroma

@@ -1,0 +1,85 @@
+version: "3.9"
+
+networks:
+  web:
+    external: true   # <-- Traefik ya la creó
+
+volumes:
+  moodle_data: {}
+
+services:
+  moodle:
+    image: bitnami/moodle:4.5.0
+    container_name: moodle
+    restart: unless-stopped
+    # Para que el contenedor pueda resolver "host.docker.internal" hacia el host Linux
+
+
+    # Cargar variables desde su .env global
+    env_file:
+      - /opt/stack/.env
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      # ---------- SELECCIÓN DE MOTOR DE BD ----------
+      # Use: mariadb  |  mysql  |  pgsql
+      MOODLE_DATABASE_TYPE: ${DB_TYPE}
+
+      #CONEXIÓN A POSTGRES (si DB_TYPE=pgsql) ----------
+      MOODLE_DATABASE_NAME_POSTGRES: ${PG_DB}
+      MOODLE_DATABASE_USER_POSTGRES: ${PG_USER}
+      MOODLE_DATABASE_PASSWORD_POSTGRES: ${PG_PASSWORD}
+     # MOODLE_DATABASE_HOST_POSTGRES: ${PG_HOST}
+     # MOODLE_DATABASE_PORT_NUMBER_POSTGRES: ${PG_PORT}
+
+      # ---------- CONFIGURACIÓN WEB ----------
+      MOODLE_HOST: 'lean.novasysia.com'     # p.ej. lean.novasysia.com
+
+      # ---------- PHP / límites recomendados ----------
+      PHP_MEMORY_LIMIT: 512M
+      PHP_UPLOAD_MAX_FILESIZE: 128M
+      PHP_POST_MAX_SIZE: 128M
+
+    volumes:
+      - moodle_data:/bitnami/moodle
+
+    networks:
+      - web
+
+    labels:
+environment:
+  # Forzar PostgreSQL
+  MOODLE_DATABASE_TYPE: pgsql
+
+  # Conexión a Postgres (sin sufijos)
+  MOODLE_DATABASE_HOST: ${PG_HOST}
+  MOODLE_DATABASE_PORT_NUMBER: ${PG_PORT}
+  MOODLE_DATABASE_NAME: ${PG_DB}
+  MOODLE_DATABASE_USER: ${PG_USER}
+  MOODLE_DATABASE_PASSWORD: ${PG_PASSWORD}
+
+  # URL pública del sitio
+  MOODLE_HOST: ${MOODLE_HOST}
+
+  # (Opcional) bootstrap del admin y nombre del sitio
+  MOODLE_USERNAME: admin
+  MOODLE_PASSWORD: UnaClaveFuerte_2025
+  MOODLE_EMAIL: novasysia@gmail.comu
+  MOODLE_SITE_NAME: "Moodle Lean Nova"
+
+# Mantenga el resto igual (volúmenes, labels, network 'web', etc.)
+# Ojo: quite cualquier línea con *_POSTGRES y DB_TYPE
+      - "traefik.enable=true"
+      - "traefik.http.routers.moodle.rule=Host(`lean.novasysia.com`)"
+      - "traefik.http.routers.moodle.entrypoints=websecure"
+      - "traefik.http.routers.moodle.tls.certresolver=letsencrypt"
+      # bitnami/moodle expone 8080 (http) y 8443 (https) internos
+      - "traefik.http.services.moodle.loadbalancer.server.port=8080"
+
+    healthcheck:
+      test: ["CMD", "bash", "-lc", "curl -fsS http://127.0.0.1:8080/login/index.php >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+

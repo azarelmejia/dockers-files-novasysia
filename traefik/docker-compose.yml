@@ -1,0 +1,46 @@
+version: "3.9"
+
+services:
+  traefik:
+    image: traefik:v2.11
+    container_name: traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"            # HTTP público
+      - "443:443"          # HTTPS público
+      - "127.0.0.1:8080:8080"   # Dashboard SOLO en localhost del servidor
+    command:
+      # Descubrir contenedores Docker
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+
+      # Entrypoints
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"     # redirige http->https
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+
+      # Redirección HTTP -> HTTPS (opcional, puedes activarla si quieres)
+      # - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      # - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+
+      # Let's Encrypt (certificados para tus apps reales)
+      - "--certificatesresolvers.le.acme.httpchallenge=true"
+      - "--certificatesresolvers.le.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.le.acme.email=${EMAIL_LETSENCRYPT}"
+      - "--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json"
+
+      # Dashboard SOLO local (no hay router público)
+      - "--api.dashboard=true"
+      - "--api.insecure=true"      # expone dashboard en :8080, pero lo limitamos a 127.0.0.1 arriba
+      - "--log.level=INFO"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+    networks:
+      - web
+
+networks:
+  web:
+    name: web
+    external: false

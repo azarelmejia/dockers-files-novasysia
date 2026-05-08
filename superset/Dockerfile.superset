@@ -1,0 +1,16 @@
+# Dockerfile.superse
+FROM apache/superset:latest
+
+USER root
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Paquetes necesarios para psycopg2
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Driver de PostgreSQL para SQLAlchemy
+RUN pip install --no-cache-dir "psycopg2-binary>=2.9,<2.11"
+
+USER superset
+

@@ -1,0 +1,54 @@
+version: "3.9"
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: unless-stopped
+    hostname: rabbitmq
+
+    environment:
+      RABBITMQ_DEFAULT_USER: ${USUARIO_RABBITMQ}
+      RABBITMQ_DEFAULT_PASS: ${PASSWPRD_RABBITMQ}
+
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+    expose:
+      - "5672"
+      - "15672"
+
+    networks:
+      - web
+      - internal
+
+    labels:
+      - "traefik.enable=true"
+
+      # Router HTTPS
+      - "traefik.http.routers.rabbitmq.rule=Host(`rabbit.mq.novasysia.com`)"
+      - "traefik.http.routers.rabbitmq.entrypoints=websecure"
+      - "traefik.http.routers.rabbitmq.tls=true"
+      - "traefik.http.routers.rabbitmq.tls.certresolver=le"
+      - "traefik.enable=true"
+
+      # Servicio apuntando al panel web de RabbitMQ
+      - "traefik.http.services.rabbitmq.loadbalancer.server.port=15672"
+
+      # Opcional: red que Traefik debe usar
+      - "traefik.docker.network=web"
+
+      # Middleware opcional para seguridad básica
+      - "traefik.http.middlewares.rabbitmq-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.rabbitmq-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.rabbitmq-headers.headers.frameDeny=true"
+      - "traefik.http.routers.rabbitmq.middlewares=rabbitmq-headers"
+
+volumes:
+  rabbitmq_data:
+
+networks:
+  web:
+    external: true
+  internal:
+    driver: bridge

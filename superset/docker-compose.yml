@@ -1,0 +1,33 @@
+version: "3.9"
+
+services:
+  superset:
+    build:
+     context: .
+     dockerfile: Dockerfile.superset
+    image: superset-with-drivers:latest
+    container_name: superset
+    restart: unless-stopped
+    environment:
+      - SUPERSET_ENV=production
+      - SUPERSET_SECRET_KEY=${SUPERSET_SECRET_KEY}
+      - SUPERSET_LOAD_EXAMPLES=no
+      - ENABLE_PROXY_FIX=true
+      - SUPERSET_WEBSERVER_WORKERS=${SUPERSET_WEBSERVER_WORKERS}
+      - GUNICORN_TIMEOUT=${GUNICORN_TIMEOUT}
+      - TZ=${TZ}
+    volumes:
+      - ./superset_home:/app/superset_home
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.superset.rule=Host(`superset.novasysia.com`)"
+      - "traefik.http.routers.superset.entrypoints=websecure"
+      - "traefik.http.routers.superset.tls.certresolver=le"
+      - "traefik.http.services.superset.loadbalancer.server.port=8088"
+    networks:
+      - web
+
+networks:
+  web:
+    external: true
+    name: web

@@ -1,0 +1,31 @@
+services:
+  ia_skills_app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: ia_skills_app
+    restart: always
+    networks:
+      - web
+
+  ia_skills_nginx:
+    image: nginx:alpine
+    container_name: ia_skills_web
+    restart: always
+    depends_on:
+      - ia_skills_app
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ia-skills.rule=Host(`ia.novasysia.com`)"
+      - "traefik.http.routers.ia-skills.entrypoints=websecure"
+      - "traefik.http.routers.ia-skills.tls=true"
+      - "traefik.http.routers.ia-skills.tls.certresolver=le"
+      - "traefik.http.services.ia-skills.loadbalancer.server.port=80"
+
+networks:
+  web:
+    external: true

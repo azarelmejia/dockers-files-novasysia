@@ -1,0 +1,52 @@
+services:
+  skills:
+    build:
+      context: ./skills
+      dockerfile: Dockerfile
+    container_name: skills_web
+    restart: always
+    volumes:
+      - /opt/stack/skills-sites/skills/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - /opt/stack/skills-sites/skills/.output/public:/usr/share/nginx/html:ro   
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.skills.rule=Host(`skills.novasysia.com`)"
+      - "traefik.http.routers.skills.entrypoints=websecure"
+      - "traefik.http.routers.skills.tls=true"
+      - "traefik.http.routers.skills.tls.certresolver=le"
+      - "traefik.http.services.skills-svc.loadbalancer.server.port=80"
+
+  adminskills:
+    build: ./adminskills
+    container_name: adminskills_web
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.adminskills.rule=Host(`adminskills.novasysia.com`)"
+      - "traefik.http.routers.adminskills.entrypoints=websecure"
+      - "traefik.http.routers.adminskills.tls=true"
+      - "traefik.http.routers.adminskills.tls.certresolver=le"
+      - "traefik.http.services.adminskills-svc.loadbalancer.server.port=80"
+
+
+  candidateskills:
+    build: ./candidateskills
+    container_name: candidateskills_web
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.candidateskills.rule=Host(`candidateskills.novasysia.com`)"
+      - "traefik.http.routers.candidateskills.entrypoints=websecure"
+      - "traefik.http.routers.candidateskills.tls=true"
+      - "traefik.http.routers.candidateskills.tls.certresolver=le"
+      - "traefik.http.services.candidateskills-svc.loadbalancer.server.port=80"
+
+
+networks:
+  web:
+      external: true
+
